@@ -278,8 +278,8 @@ export default function App() {
           {contrasenaActualizada ? (
             <div className="mensaje-confirmacion">
               <p>¡Listo, contraseña actualizada! 💜</p>
-              <p>Ya puedes seguir agendando tus clases con nosotras.</p>
-              <p><em>Con cariño, Coquín</em></p>
+              <p>Ya puedes seguir agendando tus clases con nosotr@s.</p>
+              <p><em>Con cariño, Gustavo</em></p>
               <div style={{ marginTop: 12 }}>
                 <button
                   className="btn-primario"
@@ -347,7 +347,7 @@ export default function App() {
               <p>
                 Te acabamos de enviar un correo a <strong>{email}</strong>.
                 Ábrelo y dale clic al botón para confirmar tu cuenta — así ya
-                quedas lista para agendar tus clases con nosotras.
+                quedas lista para agendar tus clases con nosotr@s.
               </p>
               <p>
                 Si no lo ves en unos minutos, revisa la carpeta de spam,
@@ -357,7 +357,7 @@ export default function App() {
               {confirmacionReenviada && (
                 <div className="mensaje-ok">Te lo volvimos a enviar 💜</div>
               )}
-              <p><em>Con cariño, Coquín</em></p>
+              <p><em>Con cariño, Gustavo</em></p>
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <button
                   className="enlace"
@@ -391,7 +391,7 @@ export default function App() {
                   Si no lo ves pronto, revisa spam, a veces se esconde
                   por ahí 😉
                 </p>
-                <p><em>Con cariño, Coquín</em></p>
+                <p><em>Con cariño, Gustavo</em></p>
                 <div style={{ marginTop: 12 }}>
                   <button
                     className="enlace"

@@ -67,6 +67,51 @@ function etiquetaSemana(fechaISO) {
   return `${inicioTexto} – ${finTexto}`
 }
 
+// Etiqueta legible de un día puntual, ej. "Lunes 10 ago".
+function etiquetaDia(fechaISO) {
+  const f = new Date(fechaISO)
+  const texto = f.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' })
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
+}
+
+// Agrupa una lista de sesiones (ya ordenadas por fecha) en:
+// semanas -> días -> sesiones. Solo incluye días que sí tienen clases.
+function agruparPorSemanaYDia(sesiones) {
+  const semanas = []
+  let semanaActual = null
+  let diaActual = null
+
+  for (const s of sesiones) {
+    const claveSemana = inicioSemana(s.fecha_hora).getTime()
+    const claveDia = new Date(s.fecha_hora).toDateString()
+
+    if (!semanaActual || semanaActual.clave !== claveSemana) {
+      semanaActual = { clave: claveSemana, etiqueta: etiquetaSemana(s.fecha_hora), dias: [] }
+      semanas.push(semanaActual)
+      diaActual = null
+    }
+    if (!diaActual || diaActual.clave !== claveDia) {
+      diaActual = { clave: claveDia, etiqueta: etiquetaDia(s.fecha_hora), sesiones: [] }
+      semanaActual.dias.push(diaActual)
+    }
+    diaActual.sesiones.push(s)
+  }
+  return semanas
+}
+
+const FRASES_MOTIVACIONALES = [
+  'No busques la clase perfecta. Busca no faltar.',
+  'La constancia transforma el cuerpo. Una clase no, volver sí.',
+  'Tu cuerpo no cambia en una clase. Cambia porque volviste a la siguiente.',
+  'El progreso no se siente en el momento. Se ve semanas después, en quien no dejó de venir.',
+  'No es motivación lo que necesitas. Es el hábito de aparecer.',
+  'Cada clase que agendas es una promesa que le haces a tu cuerpo. Cúmplela.',
+  'Nadie llega lejos por una clase intensa. Llega por las cien clases normales.',
+  'El pole no premia la perfección. Premia la presencia.',
+  'Hoy no tienes que ser la mejor versión. Solo tienes que venir.',
+  'La disciplina no es motivación todos los días. Es venir incluso los días sin ganas.',
+]
+
 const ERRORES_TRADUCIDOS = [
   [/invalid login credentials/i, 'El correo o la contraseña no son correctos.'],
   [/email not confirmed/i, 'Tu correo aún no está confirmado. Revisa tu bandeja de entrada.'],
@@ -119,6 +164,16 @@ export default function App() {
   const [misReservas, setMisReservas] = useState([])
   const [cargandoDatos, setCargandoDatos] = useState(false)
   const [mensaje, setMensaje] = useState(null) // { tipo: 'ok'|'error', texto }
+  const [fraseMotivacional, setFraseMotivacional] = useState('')
+
+  useEffect(() => {
+    // Elige una frase al azar cada vez que arranca una sesión nueva
+    // (login), no en cada render ni en cada refresco de token.
+    if (session?.user?.id) {
+      const azar = FRASES_MOTIVACIONALES[Math.floor(Math.random() * FRASES_MOTIVACIONALES.length)]
+      setFraseMotivacional(azar)
+    }
+  }, [session?.user?.id])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -590,50 +645,56 @@ export default function App() {
         {!cargandoDatos && sesiones.length === 0 && (
           <div className="vacio">No hay clases programadas por ahora.</div>
         )}
-        {sesiones.map((s, indice) => {
-          const llena = s.cupos <= 0
-          const reservable = esSesionReservable(s.fecha_hora)
-
-          // ¿Esta sesión empieza una semana distinta a la anterior en la lista?
-          const semanaActual = inicioSemana(s.fecha_hora).getTime()
-          const semanaAnterior =
-            indice > 0 ? inicioSemana(sesiones[indice - 1].fecha_hora).getTime() : null
-          const esNuevaSemana = semanaActual !== semanaAnterior
-
-          return (
-            <React.Fragment key={s.id}>
-              {esNuevaSemana && (
-                <div className="separador-semana">{etiquetaSemana(s.fecha_hora)}</div>
+        {(() => {
+          const semanas = agruparPorSemanaYDia(sesiones)
+          return semanas.map((semana, indiceSemana) => (
+            <React.Fragment key={semana.clave}>
+              {indiceSemana === 1 && fraseMotivacional && (
+                <div className="frase-motivacional">
+                  <span>{fraseMotivacional}</span>
+                </div>
               )}
-              <div className="sesion-fila">
-                <div className="sesion-info">
-                  <div className="nombre">{s.clases?.nombre}</div>
-                  <div className="meta">
-                    {formatearFecha(s.fecha_hora)} · {s.salas?.nombre}
-                    {s.clases?.disciplina ? ` · ${s.clases.disciplina}` : ''}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span className={`cupos ${!reservable ? 'proximamente' : llena ? 'lleno' : 'disponible'}`}>
-                    {!reservable
-                      ? `Se habilita el ${fechaDesbloqueo(s.fecha_hora)}`
-                      : llena
-                      ? 'Lleno'
-                      : `${s.cupos} cupos`}
-                  </span>
-                  <button
-                    className="btn-primario"
-                    disabled={llena || !reservable || accionesEnCurso.has(s.id)}
-                    title={!reservable ? 'Esta clase aún no está disponible para reservar' : undefined}
-                    onClick={() => reservar(s.id)}
-                  >
-                    {accionesEnCurso.has(s.id) ? 'Reservando...' : 'Reservar'}
-                  </button>
-                </div>
-              </div>
+              <div className="separador-semana">{semana.etiqueta}</div>
+              {semana.dias.map((dia) => (
+                <React.Fragment key={dia.clave}>
+                  <div className="subtitulo-dia">{dia.etiqueta}</div>
+                  {dia.sesiones.map((s) => {
+                    const llena = s.cupos <= 0
+                    const reservable = esSesionReservable(s.fecha_hora)
+                    return (
+                      <div className="sesion-fila" key={s.id}>
+                        <div className="sesion-info">
+                          <div className="nombre">{s.clases?.nombre}</div>
+                          <div className="meta">
+                            {formatearFecha(s.fecha_hora)} · {s.salas?.nombre}
+                            {s.clases?.disciplina ? ` · ${s.clases.disciplina}` : ''}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span className={`cupos ${!reservable ? 'proximamente' : llena ? 'lleno' : 'disponible'}`}>
+                            {!reservable
+                              ? `Se habilita el ${fechaDesbloqueo(s.fecha_hora)}`
+                              : llena
+                              ? 'Lleno'
+                              : `${s.cupos} cupos`}
+                          </span>
+                          <button
+                            className="btn-primario"
+                            disabled={llena || !reservable || accionesEnCurso.has(s.id)}
+                            title={!reservable ? 'Esta clase aún no está disponible para reservar' : undefined}
+                            onClick={() => reservar(s.id)}
+                          >
+                            {accionesEnCurso.has(s.id) ? 'Reservando...' : 'Reservar'}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </React.Fragment>
+              ))}
             </React.Fragment>
-          )
-        })}
+          ))
+        })()}
       </div>
 
       <div className="tarjeta">

@@ -138,6 +138,38 @@ button {
   padding-top: 0;
 }
 
+.subtitulo-dia {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--coquin-gris);
+  padding: 8px 0 2px;
+}
+
+.frase-motivacional {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 24px 0 8px;
+}
+.frase-motivacional::before,
+.frase-motivacional::after {
+  content: '';
+  flex: 1 1 auto;
+  height: 3px;
+  background: var(--coquin-morado);
+  border-radius: 2px;
+}
+.frase-motivacional span {
+  flex: 0 1 auto;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--coquin-morado-oscuro);
+  text-align: center;
+  line-height: 1.4;
+}
+
 .sesion-info .nombre {
   font-weight: 600;
 }

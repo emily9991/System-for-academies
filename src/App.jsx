@@ -220,7 +220,7 @@ export default function App() {
       .eq('estado', 'programada')
       .gte('fecha_hora', new Date().toISOString())
       .order('fecha_hora', { ascending: true })
-      .limit(20)
+      .limit(300)
 
     const conCupos = await Promise.all(
       (sesionesData || []).map(async (s) => {

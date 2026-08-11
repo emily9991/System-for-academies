@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient'
 import PanelPlanes from './PanelPlanes'
 import PanelClases from './PanelClases'
 import PanelProfesores from './PanelProfesores'
+import ComprarPlan from './ComprarPlan'
 
 const HORAS_LIMITE_CANCELACION = 48
 
@@ -179,6 +180,7 @@ export default function App() {
   const [mostrarPanelPlanes, setMostrarPanelPlanes] = useState(false)
   const [mostrarPanelClases, setMostrarPanelClases] = useState(false)
   const [mostrarPanelProfesores, setMostrarPanelProfesores] = useState(false)
+  const [mostrarComprarPlan, setMostrarComprarPlan] = useState(false)
 
   const esAdmin = session ? CORREOS_ADMIN.includes(session.user.email) : false
 
@@ -698,11 +700,31 @@ export default function App() {
             {miPlan.clases_restantes === null ? '∞' : miPlan.clases_restantes}
           </div>
           <div className="etq">clases restantes</div>
+          <button
+            className="btn-secundario"
+            style={{ marginTop: 12 }}
+            onClick={() => setMostrarComprarPlan(!mostrarComprarPlan)}
+          >
+            {mostrarComprarPlan ? 'Ocultar' : 'Renovar o comprar otro plan'}
+          </button>
         </div>
       ) : (
         <div className="tarjeta">
           <strong>No tienes un plan activo.</strong>
-          <div className="vacio">Contacta a la academia para activar tu membresía.</div>
+          <div className="vacio">Contacta a la academia para activar tu membresía, o compra uno aquí mismo.</div>
+          <button
+            className="btn-primario"
+            style={{ marginTop: 12 }}
+            onClick={() => setMostrarComprarPlan(!mostrarComprarPlan)}
+          >
+            {mostrarComprarPlan ? 'Ocultar' : 'Comprar un plan'}
+          </button>
+        </div>
+      )}
+
+      {mostrarComprarPlan && (
+        <div className="tarjeta">
+          <ComprarPlan usuarioId={session.user.id} />
         </div>
       )}
 

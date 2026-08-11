@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { supabase } from './supabaseClient'
 import PanelPlanes from './PanelPlanes'
+import PanelClases from './PanelClases'
+import PanelProfesores from './PanelProfesores'
 
 const HORAS_LIMITE_CANCELACION = 48
 
@@ -175,6 +177,8 @@ export default function App() {
   const [tabSemana, setTabSemana] = useState(0)
   const [diaExpandido, setDiaExpandido] = useState(null)
   const [mostrarPanelPlanes, setMostrarPanelPlanes] = useState(false)
+  const [mostrarPanelClases, setMostrarPanelClases] = useState(false)
+  const [mostrarPanelProfesores, setMostrarPanelProfesores] = useState(false)
 
   const esAdmin = session ? CORREOS_ADMIN.includes(session.user.email) : false
 
@@ -226,7 +230,7 @@ export default function App() {
     // 2. Sesiones programadas próximas
     const { data: sesionesData } = await supabase
       .from('sesiones')
-      .select('id, fecha_hora, clases(nombre, disciplina), salas(nombre)')
+      .select('id, fecha_hora, clases(nombre, disciplina, profesores(nombre)), salas(nombre)')
       .eq('estado', 'programada')
       .gte('fecha_hora', new Date().toISOString())
       .order('fecha_hora', { ascending: true })
@@ -643,24 +647,50 @@ export default function App() {
       )}
 
       {esAdmin && (
-        <div className="tarjeta">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="tarjeta tarjeta-ancha">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
             <h3 style={{ margin: 0 }}>Administración</h3>
-            <button
-              className="btn-secundario"
-              onClick={() => setMostrarPanelPlanes(!mostrarPanelPlanes)}
-            >
-              {mostrarPanelPlanes ? 'Ocultar panel de planes' : 'Gestionar planes'}
-            </button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                className="btn-secundario"
+                onClick={() => setMostrarPanelPlanes(!mostrarPanelPlanes)}
+              >
+                {mostrarPanelPlanes ? 'Ocultar planes' : 'Gestionar planes'}
+              </button>
+              <button
+                className="btn-secundario"
+                onClick={() => setMostrarPanelClases(!mostrarPanelClases)}
+              >
+                {mostrarPanelClases ? 'Ocultar clases' : 'Gestionar clases'}
+              </button>
+              <button
+                className="btn-secundario"
+                onClick={() => setMostrarPanelProfesores(!mostrarPanelProfesores)}
+              >
+                {mostrarPanelProfesores ? 'Ocultar profesores' : 'Gestionar profesores'}
+              </button>
+            </div>
           </div>
           {mostrarPanelPlanes && (
             <div style={{ marginTop: 16 }}>
               <PanelPlanes />
             </div>
           )}
+          {mostrarPanelClases && (
+            <div style={{ marginTop: 16 }}>
+              <PanelClases />
+            </div>
+          )}
+          {mostrarPanelProfesores && (
+            <div style={{ marginTop: 16 }}>
+              <PanelProfesores />
+            </div>
+          )}
         </div>
       )}
 
+      {!esAdmin && (
+      <>
       {miPlan ? (
         <div className="plan-activo">
           <div className="etq">{miPlan.planes?.nombre}</div>
@@ -734,6 +764,7 @@ export default function App() {
                               <div className="meta">
                                 {formatearFecha(s.fecha_hora)} · {s.salas?.nombre}
                                 {s.clases?.disciplina ? ` · ${s.clases.disciplina}` : ''}
+                                {s.clases?.profesores?.nombre ? ` · Prof. ${s.clases.profesores.nombre}` : ''}
                               </div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -792,6 +823,8 @@ export default function App() {
           )
         })}
       </div>
+      </>
+      )}
     </div>
   )
 }

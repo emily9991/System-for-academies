@@ -164,14 +164,16 @@ export default function App() {
   const [misReservas, setMisReservas] = useState([])
   const [cargandoDatos, setCargandoDatos] = useState(false)
   const [mensaje, setMensaje] = useState(null) // { tipo: 'ok'|'error', texto }
-  const [fraseMotivacional, setFraseMotivacional] = useState('')
+  const [frasesPorSemana, setFrasesPorSemana] = useState([])
+  const [tabSemana, setTabSemana] = useState(0)
 
   useEffect(() => {
-    // Elige una frase al azar cada vez que arranca una sesión nueva
-    // (login), no en cada render ni en cada refresco de token.
+    // Elige 2 frases distintas al azar (una por tab de semana) cada vez
+    // que arranca una sesión nueva (login), no en cada render.
     if (session?.user?.id) {
-      const azar = FRASES_MOTIVACIONALES[Math.floor(Math.random() * FRASES_MOTIVACIONALES.length)]
-      setFraseMotivacional(azar)
+      const barajadas = [...FRASES_MOTIVACIONALES].sort(() => Math.random() - 0.5)
+      setFrasesPorSemana(barajadas.slice(0, 2))
+      setTabSemana(0)
     }
   }, [session?.user?.id])
 
@@ -646,16 +648,35 @@ export default function App() {
           <div className="vacio">No hay clases programadas por ahora.</div>
         )}
         {(() => {
-          const semanas = agruparPorSemanaYDia(sesiones)
-          return semanas.map((semana, indiceSemana) => (
-            <React.Fragment key={semana.clave}>
-              {indiceSemana === 1 && fraseMotivacional && (
-                <div className="frase-motivacional">
-                  <span>{fraseMotivacional}</span>
+          const semanas = agruparPorSemanaYDia(sesiones).slice(0, 2) // solo semana 1 y 2
+          if (semanas.length === 0) return null
+          const semanaVisible = semanas[Math.min(tabSemana, semanas.length - 1)]
+          const fraseVisible = frasesPorSemana[Math.min(tabSemana, semanas.length - 1)]
+
+          return (
+            <>
+              {semanas.length > 1 && (
+                <div className="tabs-semana">
+                  {semanas.map((semana, indice) => (
+                    <button
+                      key={semana.clave}
+                      className={`tab-semana ${tabSemana === indice ? 'activo' : ''}`}
+                      onClick={() => setTabSemana(indice)}
+                    >
+                      Semana {indice + 1}
+                      <span className="tab-semana-fechas">{semana.etiqueta}</span>
+                    </button>
+                  ))}
                 </div>
               )}
-              <div className="separador-semana">{semana.etiqueta}</div>
-              {semana.dias.map((dia) => (
+
+              {fraseVisible && (
+                <div className="frase-motivacional">
+                  <span>{fraseVisible}</span>
+                </div>
+              )}
+
+              {semanaVisible.dias.map((dia) => (
                 <React.Fragment key={dia.clave}>
                   <div className="subtitulo-dia">{dia.etiqueta}</div>
                   {dia.sesiones.map((s) => {
@@ -692,8 +713,8 @@ export default function App() {
                   })}
                 </React.Fragment>
               ))}
-            </React.Fragment>
-          ))
+            </>
+          )
         })()}
       </div>
 

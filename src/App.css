@@ -122,6 +122,22 @@ button {
   border-bottom: none;
 }
 
+.separador-semana {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--coquin-morado);
+  padding: 14px 0 6px;
+  border-top: 1px solid #e6d9f5;
+  margin-top: 4px;
+}
+.separador-semana:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
 .sesion-info .nombre {
   font-weight: 600;
 }

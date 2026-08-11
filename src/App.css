@@ -286,3 +286,179 @@ button {
   font-size: 0.85rem;
   padding: 0;
 }
+
+/* Sección de administración: más ancha que el resto de la app (que está
+   diseñada angosta a propósito para el flujo de reservas en celular).
+   Solo se activa desde 900px de ancho de pantalla en adelante — en
+   celular esta clase no hace NADA, la tarjeta se ve exactamente igual
+   que cualquier otra tarjeta normal, sin ningún cambio de tamaño. */
+@media (min-width: 900px) {
+  .tarjeta-ancha {
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100vw;
+    max-width: 1100px;
+    box-sizing: border-box;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+.panel-planes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.panel-planes-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--coquin-morado-oscuro);
+}
+
+.tabla-planes-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1.5px solid var(--coquin-morado);
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabla-planes {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.tabla-planes th,
+.tabla-planes td {
+  border: 1px solid var(--coquin-morado-claro);
+  padding: 10px 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tabla-planes thead th {
+  background: var(--coquin-morado);
+  color: var(--coquin-blanco);
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-color: var(--coquin-morado);
+}
+
+.tabla-planes tbody tr:nth-child(even) {
+  background: var(--coquin-morado-claro);
+}
+
+.tabla-planes tbody tr:hover {
+  background: #ecd9ff;
+}
+
+.tabla-planes tr.fila-inactiva {
+  opacity: 0.55;
+}
+
+.acciones-planes {
+  display: flex;
+  gap: 8px;
+}
+.acciones-planes button {
+  background: transparent;
+  color: var(--coquin-morado);
+  border: 1.5px solid var(--coquin-morado);
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+}
+.acciones-planes button:hover {
+  background: var(--coquin-morado);
+  color: var(--coquin-blanco);
+}
+
+.badge-activo,
+.badge-inactivo {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.badge-activo {
+  background: #e8f7ee;
+  color: var(--coquin-exito);
+}
+.badge-inactivo {
+  background: #efeaf2;
+  color: var(--coquin-gris);
+}
+
+/* ===== Modal del formulario de planes ===== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(43, 34, 51, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 50;
+}
+
+.modal-form {
+  background: var(--coquin-blanco);
+  border-radius: 14px;
+  padding: 22px;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 20px rgba(107, 33, 168, 0.25);
+}
+
+.modal-form h3 {
+  margin: 0 0 4px;
+  color: var(--coquin-morado-oscuro);
+}
+
+.modal-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--coquin-texto);
+}
+
+.modal-form label.checkbox-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-form input[type='text'],
+.modal-form input[type='number'],
+.modal-form select {
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1.5px solid #ddd0ea;
+  font-size: 0.9rem;
+  font-weight: 400;
+  font-family: inherit;
+}
+
+.modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+.modal-acciones button[type='button'] {
+  background: transparent;
+  color: var(--coquin-gris);
+  border: 1.5px solid #ddd0ea;
+}

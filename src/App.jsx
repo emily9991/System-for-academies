@@ -1,7 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { supabase } from './supabaseClient'
+import PanelPlanes from './PanelPlanes'
 
 const HORAS_LIMITE_CANCELACION = 48
+
+// Correos que pueden ver el panel de administración de planes.
+// Por ahora es una lista simple porque solo hay una admin (Emily).
+// Si en el futuro hay más staff, esto se puede mover a una columna
+// "rol" en la base de datos.
+const CORREOS_ADMIN = ['test@coquin.com']
 
 function formatearFecha(fechaISO) {
   const f = new Date(fechaISO)
@@ -167,6 +174,9 @@ export default function App() {
   const [frasesPorSemana, setFrasesPorSemana] = useState([])
   const [tabSemana, setTabSemana] = useState(0)
   const [diaExpandido, setDiaExpandido] = useState(null)
+  const [mostrarPanelPlanes, setMostrarPanelPlanes] = useState(false)
+
+  const esAdmin = session ? CORREOS_ADMIN.includes(session.user.email) : false
 
   useEffect(() => {
     // Al cambiar de tab de semana, arrancamos con todos los días cerrados.
@@ -629,6 +639,25 @@ export default function App() {
       {mensaje && (
         <div className={mensaje.tipo === 'error' ? 'mensaje-error' : 'mensaje-ok'}>
           {mensaje.texto}
+        </div>
+      )}
+
+      {esAdmin && (
+        <div className="tarjeta">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0 }}>Administración</h3>
+            <button
+              className="btn-secundario"
+              onClick={() => setMostrarPanelPlanes(!mostrarPanelPlanes)}
+            >
+              {mostrarPanelPlanes ? 'Ocultar panel de planes' : 'Gestionar planes'}
+            </button>
+          </div>
+          {mostrarPanelPlanes && (
+            <div style={{ marginTop: 16 }}>
+              <PanelPlanes />
+            </div>
+          )}
         </div>
       )}
 

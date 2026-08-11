@@ -144,6 +144,10 @@ button {
   background: #fbe9e7;
   color: var(--coquin-error);
 }
+.cupos.proximamente {
+  background: var(--coquin-morado-claro);
+  color: var(--coquin-gris);
+}
 
 .form-auth {
   display: flex;

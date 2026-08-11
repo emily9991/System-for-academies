@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from './supabaseClient'
 
 const HORAS_LIMITE_CANCELACION = 48
@@ -18,6 +18,74 @@ function horasHastaSesion(fechaISO) {
   const ahora = new Date()
   const fecha = new Date(fechaISO)
   return (fecha.getTime() - ahora.getTime()) / (1000 * 60 * 60)
+}
+
+// Devuelve el lunes (00:00) de la semana a la que pertenece una fecha.
+// Debe coincidir con date_trunc('week', ...) de Postgres, que también usa lunes.
+function inicioSemana(fechaISO) {
+  const d = new Date(fechaISO)
+  const dia = d.getDay() // 0 = domingo
+  const diff = (dia === 0 ? -6 : 1) - dia
+  const lunes = new Date(d)
+  lunes.setDate(d.getDate() + diff)
+  lunes.setHours(0, 0, 0, 0)
+  return lunes
+}
+
+// Misma regla que fn_sesion_reservable en la base de datos:
+// siempre abiertas las próximas 2 semanas, y cada semana siguiente se
+// habilita 3 días antes de que empiece. Esto es solo para la UI (mostrar
+// el estado correcto); el trigger en Supabase sigue siendo la validación real.
+function esSesionReservable(fechaISO) {
+  const ahora = new Date()
+  const fecha = new Date(fechaISO)
+  const limiteDosSemanas = inicioSemana(ahora)
+  limiteDosSemanas.setDate(limiteDosSemanas.getDate() + 14)
+  if (fecha < limiteDosSemanas) return true
+  const desbloqueo = inicioSemana(fechaISO)
+  desbloqueo.setDate(desbloqueo.getDate() - 3)
+  return ahora >= desbloqueo
+}
+
+function fechaDesbloqueo(fechaISO) {
+  const desbloqueo = inicioSemana(fechaISO)
+  desbloqueo.setDate(desbloqueo.getDate() - 3)
+  return desbloqueo.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
+}
+
+// Clave estable para agrupar sesiones por día calendario (no por hora).
+function claveDia(fechaISO) {
+  const f = new Date(fechaISO)
+  return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}-${String(
+    f.getDate()
+  ).padStart(2, '0')}`
+}
+
+function formatearEncabezadoDia(fechaISO) {
+  const f = new Date(fechaISO)
+  const texto = f.toLocaleDateString('es-CO', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'short',
+  })
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
+}
+
+// Agrupa una lista de sesiones (ya ordenada por fecha_hora) en días,
+// conservando el orden cronológico de los días y de las sesiones dentro
+// de cada día.
+function agruparPorDia(sesiones) {
+  const grupos = new Map()
+  for (const s of sesiones) {
+    const clave = claveDia(s.fecha_hora)
+    if (!grupos.has(clave)) grupos.set(clave, [])
+    grupos.get(clave).push(s)
+  }
+  return Array.from(grupos.entries()).map(([clave, items]) => ({
+    clave,
+    etiqueta: formatearEncabezadoDia(items[0].fecha_hora),
+    items,
+  }))
 }
 
 const ERRORES_TRADUCIDOS = [
@@ -72,6 +140,7 @@ export default function App() {
   const [misReservas, setMisReservas] = useState([])
   const [cargandoDatos, setCargandoDatos] = useState(false)
   const [mensaje, setMensaje] = useState(null) // { tipo: 'ok'|'error', texto }
+  const [diaAbierto, setDiaAbierto] = useState(null) // clave del día expandido
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -137,6 +206,20 @@ export default function App() {
   useEffect(() => {
     cargarDatos()
   }, [cargarDatos])
+
+  const gruposPorDia = useMemo(() => agruparPorDia(sesiones), [sesiones])
+
+  // Cuando llegan sesiones nuevas, abre por defecto el día más próximo,
+  // salvo que el usuario ya haya elegido un día que sigue existiendo.
+  useEffect(() => {
+    if (gruposPorDia.length === 0) {
+      setDiaAbierto(null)
+      return
+    }
+    const sigueExistiendo = gruposPorDia.some((g) => g.clave === diaAbierto)
+    if (!sigueExistiendo) setDiaAbierto(gruposPorDia[0].clave)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gruposPorDia])
 
   async function manejarAuth(e) {
     e.preventDefault()
@@ -543,29 +626,97 @@ export default function App() {
         {!cargandoDatos && sesiones.length === 0 && (
           <div className="vacio">No hay clases programadas por ahora.</div>
         )}
-        {sesiones.map((s) => {
-          const llena = s.cupos <= 0
+        {gruposPorDia.map((grupo) => {
+          const abierto = diaAbierto === grupo.clave
+          const disponibles = grupo.items.filter(
+            (s) => s.cupos > 0 && esSesionReservable(s.fecha_hora)
+          ).length
           return (
-            <div className="sesion-fila" key={s.id}>
-              <div className="sesion-info">
-                <div className="nombre">{s.clases?.nombre}</div>
-                <div className="meta">
-                  {formatearFecha(s.fecha_hora)} · {s.salas?.nombre}
-                  {s.clases?.disciplina ? ` · ${s.clases.disciplina}` : ''}
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className={`cupos ${llena ? 'lleno' : 'disponible'}`}>
-                  {llena ? 'Lleno' : `${s.cupos} cupos`}
+            <div
+              key={grupo.clave}
+              style={{
+                borderBottom: '1px solid #eee',
+                marginBottom: abierto ? 8 : 0,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setDiaAbierto(abierto ? null : grupo.clave)}
+                aria-expanded={abierto}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  padding: '12px 4px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontFamily: 'inherit',
+                }}
+              >
+                <span style={{ fontWeight: 600, color: '#6b21a8' }}>{grupo.etiqueta}</span>
+                <span style={{ fontSize: 13, color: '#666', flex: 1, marginLeft: 12 }}>
+                  {grupo.items.length} clase{grupo.items.length === 1 ? '' : 's'}
+                  {disponibles > 0 ? ` · ${disponibles} con cupo` : ''}
                 </span>
-                <button
-                  className="btn-primario"
-                  disabled={llena || accionesEnCurso.has(s.id)}
-                  onClick={() => reservar(s.id)}
+                <span
+                  style={{
+                    display: 'inline-block',
+                    transform: abierto ? 'rotate(90deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.15s ease',
+                    color: '#6b21a8',
+                    fontSize: 18,
+                  }}
                 >
-                  {accionesEnCurso.has(s.id) ? 'Reservando...' : 'Reservar'}
-                </button>
-              </div>
+                  ›
+                </span>
+              </button>
+              {abierto && (
+                <div style={{ paddingBottom: 4 }}>
+                  {grupo.items.map((s) => {
+                    const llena = s.cupos <= 0
+                    const reservable = esSesionReservable(s.fecha_hora)
+                    return (
+                      <div className="sesion-fila" key={s.id}>
+                        <div className="sesion-info">
+                          <div className="nombre">{s.clases?.nombre}</div>
+                          <div className="meta">
+                            {formatearFecha(s.fecha_hora)} · {s.salas?.nombre}
+                            {s.clases?.disciplina ? ` · ${s.clases.disciplina}` : ''}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span
+                            className={`cupos ${
+                              !reservable ? 'proximamente' : llena ? 'lleno' : 'disponible'
+                            }`}
+                          >
+                            {!reservable
+                              ? `Se habilita el ${fechaDesbloqueo(s.fecha_hora)}`
+                              : llena
+                              ? 'Lleno'
+                              : `${s.cupos} cupos`}
+                          </span>
+                          <button
+                            className="btn-primario"
+                            disabled={llena || !reservable || accionesEnCurso.has(s.id)}
+                            title={
+                              !reservable
+                                ? 'Esta clase aún no está disponible para reservar'
+                                : undefined
+                            }
+                            onClick={() => reservar(s.id)}
+                          >
+                            {accionesEnCurso.has(s.id) ? 'Reservando...' : 'Reservar'}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )
         })}

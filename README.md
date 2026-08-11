@@ -7,8 +7,4 @@
 - Botón "Reservar" que descuenta un cupo y una clase del plan
 - Botón "Cancelar" que solo se habilita si faltan 48 horas o más para la clase — la regla real
   la aplica la base de datos (función `cancelar_reserva`), este botón deshabilitado es solo
-<<<<<<< HEAD
   para que el usuario no intente algo que de todas formas la base de datos va a rechazar
-=======
-  para que el usuario no intente algo que de todas formas la base de datos va a rechazar.
->>>>>>> cbac0c3badf13a11717422373802fbcdbf96c4e6

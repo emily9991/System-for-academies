@@ -138,11 +138,27 @@ button {
   padding-top: 0;
 }
 
-.subtitulo-dia {
-  font-size: 0.78rem;
-  font-weight: 600;
+.dia-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #f0e8fa;
+  padding: 10px 2px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--coquin-morado-oscuro);
+  cursor: pointer;
+  text-align: left;
+}
+.dia-toggle.abierto {
+  color: var(--coquin-morado);
+}
+.dia-toggle-flecha {
   color: var(--coquin-gris);
-  padding: 8px 0 2px;
+  font-size: 0.8rem;
 }
 
 .tabs-semana {

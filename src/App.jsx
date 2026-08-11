@@ -166,6 +166,12 @@ export default function App() {
   const [mensaje, setMensaje] = useState(null) // { tipo: 'ok'|'error', texto }
   const [frasesPorSemana, setFrasesPorSemana] = useState([])
   const [tabSemana, setTabSemana] = useState(0)
+  const [diaExpandido, setDiaExpandido] = useState(null)
+
+  useEffect(() => {
+    // Al cambiar de tab de semana, arrancamos con todos los días cerrados.
+    setDiaExpandido(null)
+  }, [tabSemana])
 
   useEffect(() => {
     // Elige 2 frases distintas al azar (una por tab de semana) cada vez
@@ -676,43 +682,54 @@ export default function App() {
                 </div>
               )}
 
-              {semanaVisible.dias.map((dia) => (
-                <React.Fragment key={dia.clave}>
-                  <div className="subtitulo-dia">{dia.etiqueta}</div>
-                  {dia.sesiones.map((s) => {
-                    const llena = s.cupos <= 0
-                    const reservable = esSesionReservable(s.fecha_hora)
-                    return (
-                      <div className="sesion-fila" key={s.id}>
-                        <div className="sesion-info">
-                          <div className="nombre">{s.clases?.nombre}</div>
-                          <div className="meta">
-                            {formatearFecha(s.fecha_hora)} · {s.salas?.nombre}
-                            {s.clases?.disciplina ? ` · ${s.clases.disciplina}` : ''}
+              {semanaVisible.dias.map((dia) => {
+                const abierto = diaExpandido === dia.clave
+                return (
+                  <React.Fragment key={dia.clave}>
+                    <button
+                      type="button"
+                      className={`dia-toggle ${abierto ? 'abierto' : ''}`}
+                      onClick={() => setDiaExpandido(abierto ? null : dia.clave)}
+                    >
+                      <span>{dia.etiqueta}</span>
+                      <span className="dia-toggle-flecha">{abierto ? '▾' : '▸'}</span>
+                    </button>
+                    {abierto &&
+                      dia.sesiones.map((s) => {
+                        const llena = s.cupos <= 0
+                        const reservable = esSesionReservable(s.fecha_hora)
+                        return (
+                          <div className="sesion-fila" key={s.id}>
+                            <div className="sesion-info">
+                              <div className="nombre">{s.clases?.nombre}</div>
+                              <div className="meta">
+                                {formatearFecha(s.fecha_hora)} · {s.salas?.nombre}
+                                {s.clases?.disciplina ? ` · ${s.clases.disciplina}` : ''}
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <span className={`cupos ${!reservable ? 'proximamente' : llena ? 'lleno' : 'disponible'}`}>
+                                {!reservable
+                                  ? `Se habilita el ${fechaDesbloqueo(s.fecha_hora)}`
+                                  : llena
+                                  ? 'Lleno'
+                                  : `${s.cupos} cupos`}
+                              </span>
+                              <button
+                                className="btn-primario"
+                                disabled={llena || !reservable || accionesEnCurso.has(s.id)}
+                                title={!reservable ? 'Esta clase aún no está disponible para reservar' : undefined}
+                                onClick={() => reservar(s.id)}
+                              >
+                                {accionesEnCurso.has(s.id) ? 'Reservando...' : 'Reservar'}
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span className={`cupos ${!reservable ? 'proximamente' : llena ? 'lleno' : 'disponible'}`}>
-                            {!reservable
-                              ? `Se habilita el ${fechaDesbloqueo(s.fecha_hora)}`
-                              : llena
-                              ? 'Lleno'
-                              : `${s.cupos} cupos`}
-                          </span>
-                          <button
-                            className="btn-primario"
-                            disabled={llena || !reservable || accionesEnCurso.has(s.id)}
-                            title={!reservable ? 'Esta clase aún no está disponible para reservar' : undefined}
-                            onClick={() => reservar(s.id)}
-                          >
-                            {accionesEnCurso.has(s.id) ? 'Reservando...' : 'Reservar'}
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </React.Fragment>
-              ))}
+                        )
+                      })}
+                  </React.Fragment>
+                )
+              })}
             </>
           )
         })()}

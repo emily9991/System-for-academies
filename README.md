@@ -4,7 +4,9 @@ Sistema web de reservas de clases para academias que venden **paquetes y membres
 
 > **English summary:** Full-stack class-booking system (React + Supabase/Postgres) for academies that sell class packages and memberships. Business rules (capacity, plan credits, a 48-hour cancellation window) are enforced in the database with triggers and `security definer` RPC functions, so they can't be bypassed from the client. Includes an admin panel, Google Calendar sync via an Edge Function, and a Wompi payment integration ready to be connected. **Proprietary code, all rights reserved. Not open source.**
 
-<!-- ![Pantalla principal](docs/pantalla-principal.png) -->
+---
+
+![Panel de administracion](docs/captura-del-administrador-de-planes.png)
 
 ---
 
